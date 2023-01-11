@@ -34,17 +34,6 @@ parameters:
 
 steps:
 - task: AzurePowerShell@5
-  displayName: 'Import Api to Apim'
-  inputs:
-    azureSubscription: ${{ parameters.apimARMServiceConnection }}
-    ScriptType: 'FilePath'
-    ScriptPath: '$(Pipeline.Workspace)/cspservice-artifacts/ImportApiToApim.ps1'
-    ScriptArguments: '-ApimResourceGroupName ${{ parameters.apimResourceGroupName }} -ApimInstanceName ${{ parameters.apimInstanceName }} -ApiPrefix ${{ parameters.apiPrefix }} -SwaggerUrl ${{ parameters.swaggerUrl }} -ApiName "${{ parameters.apimApiName }}" -ServiceUrl ${{ parameters.serviceUrl }}'
-    FailOnStandardError: true
-    preferredAzurePowerShellVersion: '9.3.0'
-
-
-- task: AzurePowerShell@5
   displayName: 'Import GraphQL Api to Apim'
   inputs:
     azureSubscription: ${{ parameters.apimARMServiceConnection }}
