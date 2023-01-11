@@ -27,9 +27,9 @@ variables:
   containerRegistrySIT: 'acrcspsit5769997721069705598.azurecr.io'
   replicaCountSIT: 2
 
-  apimARMServiceConnectionSIT: 'RM-APIM-20-05'
-  apimInstanceNameSIT: 'professionalserviceint'
-  apimResourceGroupNameSIT: 'FIPS-INT-RG'
+  apimARMServiceConnectionSIT: 'apim-svc'
+  apimInstanceNameSIT: 'adarsh-apim'
+  apimResourceGroupNameSIT: 'apim'
   apimApiNameSIT: 'CSP API'
   swaggerUrlSIT: 'https://fd-csp-sit-h7f5bmcpfahwfwfr.z01.azurefd.net/csp-api/swagger/v1/swagger.json'
   serviceUrlSIT: 'https://fd-csp-sit-h7f5bmcpfahwfwfr.z01.azurefd.net/csp-api'
@@ -86,20 +86,8 @@ pool:
   vmImage: ubuntu-latest
 
 stages:
-- stage: publish_helm_artifacts_stage
-  displayName: 'Publish helm artifacts'
-  condition: and(succeeded(), or(eq(variables.isDevelop, true), eq(variables.isMaster, true)))
-  jobs:
-  - job: publish_helm_artifacts_job
-    displayName: Publish helm artifacts
-    steps:
-    - publish: '$(Build.SourcesDirectory)/Deployment/cspservice'
-      artifact: cspservice-artifacts
-
 - stage: nonprod_import_api_to_apim_sit_stage
   displayName: Import API to APIM for SIT
-  condition: and(succeeded(), or(eq(variables.isDevelop, true), eq(variables.isMaster, true)))
-  dependsOn: publish_helm_artifacts_stage
   jobs:
   - deployment: nonprod_import_api_to_apim_job
     displayName: Import API to APIM in SIT
