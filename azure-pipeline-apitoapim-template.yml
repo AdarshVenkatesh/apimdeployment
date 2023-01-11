@@ -1,0 +1,55 @@
+parameters:
+- name: apimARMServiceConnection
+  type: string
+  default: ''
+- name: apimResourceGroupName
+  type: string
+  default: ''
+- name: apimInstanceName
+  type: string
+  default: ''
+- name: apimApiName
+  type: string
+  default: ''
+- name: swaggerUrl
+  type: string
+  default: ''
+- name: ServiceUrl
+  type: string
+  default: ''
+- name: apiPrefix
+  type: string
+  default: ''
+- name: apimGraphQLApiName
+  type: string
+  default: ''
+- name: graphQLServiceUrl
+  type: string
+  default: ''
+- name: graphQLSuffix
+  type: string
+  default: ''
+
+
+
+steps:
+- task: AzurePowerShell@5
+  displayName: 'Import Api to Apim'
+  inputs:
+    azureSubscription: ${{ parameters.apimARMServiceConnection }}
+    ScriptType: 'FilePath'
+    ScriptPath: '$(Pipeline.Workspace)/cspservice-artifacts/ImportApiToApim.ps1'
+    ScriptArguments: '-ApimResourceGroupName ${{ parameters.apimResourceGroupName }} -ApimInstanceName ${{ parameters.apimInstanceName }} -ApiPrefix ${{ parameters.apiPrefix }} -SwaggerUrl ${{ parameters.swaggerUrl }} -ApiName "${{ parameters.apimApiName }}" -ServiceUrl ${{ parameters.serviceUrl }}'
+    FailOnStandardError: true
+    preferredAzurePowerShellVersion: '9.3.0'
+
+
+- task: AzurePowerShell@5
+  displayName: 'Import GraphQL Api to Apim'
+  inputs:
+    azureSubscription: ${{ parameters.apimARMServiceConnection }}
+    ScriptType: 'FilePath'
+    ScriptPath: '$(Pipeline.Workspace)/cspservice-artifacts/ImportGraphQLApiToApim.ps1'
+    ScriptArguments: '-ApimResourceGroupName ${{ parameters.apimResourceGroupName }} -ApimInstanceName ${{ parameters.apimInstanceName }} -GraphQLSuffix ${{ parameters.graphQLSuffix }} -ApiName "${{ parameters.apimGraphQLApiName }}" -ServiceUrl ${{ parameters.graphQLServiceUrl }}'
+    FailOnStandardError: true
+    preferredAzurePowerShellVersion: '9.3.0'

@@ -1,0 +1,53 @@
+parameters:
+- name: serviceConnection
+  type: string
+  default: ''
+- name: dockerRegistryServiceConnection
+  type: string
+- name: keyVaultName
+  type: string
+  default: ''
+
+###########################################################################################
+# Get PAT from Keyvault
+###########################################################################################
+steps:
+- ${{ each parameter in parameters }}:
+  - script: echo '${{ parameter.Key }} -> ${{ parameter.Value }}'
+
+  - task: AzureCLI@2
+    displayName: 'Get Personal Access Token from keyvault'
+    inputs: 
+      azureSubscription: '${{ parameters.serviceConnection }}'
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript:  |  
+        token=$(az keyvault secret show --vault-name ${{ parameters.keyVaultName }} --name 'RMPackageFeedPAT' --query value --output tsv)
+        echo '##vso[task.setvariable variable=PAT;issecret=true]'$token
+###########################################################################################
+# Add PAT to Nuget Config
+###########################################################################################
+- task: NuGetCommand@2
+  displayName: 'Add Personal Access Token to Nuget config'
+  inputs:
+    command: 'custom'
+    arguments: 'sources Add -Name "CE-DM-CustomerSuccessPortfolio" 
+                -Source "https://microsoftit.pkgs.visualstudio.com/OneITVSO/_packaging/CE-DM-CustomerSuccessPortfolio/nuget/v3/index.json" 
+                -Username any 
+                -Password $(PAT) 
+                -ConfigFile $(Build.SourcesDirectory)/Nuget.config 
+                -StorePasswordInClearText 
+                -Verbosity detailed'
+###########################################################################################
+# Build And Publish The Docker Image
+###########################################################################################
+- task: Docker@2
+  displayName: Build and push an image to container registry
+  inputs:
+    command: buildAndPush
+    containerRegistry: ${{ parameters.dockerRegistryServiceConnection }}
+    repository: 'Csp.Api'
+    dockerfile: '$(Build.SourcesDirectory)/Csp.Api/Dockerfile'
+    buildContext: '$(Build.SourcesDirectory)'
+    tags: |
+        $(Build.BuildNumber)

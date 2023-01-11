@@ -1,0 +1,53 @@
+parameters:
+- name: armServiceConnection
+  type: string
+  default: ''
+- name: aksResourceGroup
+  type: string
+  default: ''
+- name: aksCluster
+  type: string
+  default: ''
+- name: valuesFile
+  type: string
+  default: ''
+- name: environment
+  type: string
+  default: ''
+- name: containerRegistry
+  type: string
+  default: ''
+- name: aksAgentPoolClientId
+  type: string
+  default: ''
+- name: replicaCount
+  type: number
+  default: 1
+
+steps:
+- ${{ each parameter in parameters }}:
+  - script: echo '${{ parameter.Key }} -> ${{ parameter.Value }}'
+  
+- task: HelmInstaller@0
+  inputs:
+    helmVersion: '3.5.4'
+    installKubectl: true
+
+- task: HelmDeploy@0
+  inputs:
+    connectionType: 'Azure Resource Manager'
+    azureSubscription: '${{ parameters.armServiceConnection }}'
+    azureResourceGroup: '${{ parameters.aksResourceGroup }}'
+    kubernetesCluster: '${{ parameters.aksCluster }}'
+    useClusterAdmin: true
+    namespace: 'csp-apis-ns'
+    command: 'upgrade'
+    chartType: 'FilePath'
+    chartPath: '$(Pipeline.Workspace)/cspservice-artifacts'
+    releaseName: 'csp-api'
+    valueFile: '$(Pipeline.Workspace)/cspservice-artifacts/${{ parameters.valuesFile }}'
+    arguments: '--set image.tag=$(Build.BuildNumber)
+                --set image.repository=${{ parameters.containerRegistry }}/csp.api
+                --set env.ASPNETCORE_ENVIRONMENT=${{ parameters.environment }}
+                --set env.AKS_AGENTPOOL_CLIENT_ID=${{ parameters.aksAgentPoolClientId }}
+                --set replicaCount=${{ parameters.replicaCount }}'

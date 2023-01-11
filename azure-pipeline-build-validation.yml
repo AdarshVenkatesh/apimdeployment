@@ -1,0 +1,125 @@
+trigger:
+- none
+
+variables:
+  armServiceConnection: 'RM-SubscriptionResources-2020-4-20'
+  keyvaultNameSIT: 'csp-sit'
+  BuildConfiguration: 'Release'
+  BuildPlatform: 'any cpu'
+
+pool:
+  vmImage: windows-2022
+
+
+steps:
+###########################################################################################
+# Use .net SDK
+###########################################################################################
+- task: UseDotNet@2
+  inputs:
+    packageType: 'sdk'
+    version: '6.x'
+###########################################################################################
+# Get PAT from Azure keyvault
+###########################################################################################
+- task: AzureCLI@2
+  displayName: 'Get Personal Access Token from keyvault'
+  inputs: 
+    azureSubscription:  $(armServiceConnection)
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript:  |  
+      token=$(az keyvault secret show --vault-name $(keyvaultNameSIT) --name 'RMPackageFeedPAT' --query value --output tsv)
+      echo '##vso[task.setvariable variable=PAT;issecret=true]'$token
+###########################################################################################
+# Install Nuget
+###########################################################################################
+- task: NuGetToolInstaller@1
+  displayName: 'Use NuGet 6.3.1'
+  inputs:
+    versionSpec: 6.3.1
+###########################################################################################
+# Addinh PAT to Nuget config
+###########################################################################################
+- task: NuGetCommand@2
+  displayName: 'Add Personal Access Token to Nuget config'
+  inputs:
+    command: 'custom'
+    arguments: 'sources Add -Name "CE-DM-CustomerSuccessPortfolio" 
+                -Source "https://microsoftit.pkgs.visualstudio.com/OneITVSO/_packaging/CE-DM-CustomerSuccessPortfolio/nuget/v3/index.json"                
+                -Username any 
+                -Password $(PAT) 
+                -ConfigFile $(Build.SourcesDirectory)/Nuget.config 
+                -StorePasswordInClearText 
+                -Verbosity detailed'
+###########################################################################################
+# Nuget restore command
+###########################################################################################
+- task: NuGetCommand@2
+  displayName: 'NuGet restore'
+  inputs:
+    restoreSolution: Microsoft.PS.SD.RM.Csp.sln
+    vstsFeed: '3d1a556d-2042-4a45-9dae-61808ff33d3b/c0501210-e3b2-40f0-8528-3c90bac2ba3a'
+###########################################################################################
+# Build the solution
+###########################################################################################
+- task: VSBuild@1
+  displayName: 'Build solution Microsoft.PS.SD.RM.Csp.sln'
+  inputs:
+    solution: 'Microsoft.PS.SD.RM.Csp.sln'
+    platform: 'any cpu'
+    configuration: Release
+###########################################################################################
+# Run unit test cases
+###########################################################################################
+- task: DotNetCoreCLI@2
+  displayName: 'Run Unit Tests'
+  inputs:
+    command: test
+    projects: |
+     **/*Unit[Tt]est*.csproj
+     !**/obj/**
+    arguments: '--configuration Release --no-restore --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura'
+ 
+###########################################################################################
+# Install report generator
+###########################################################################################
+- script: |
+   dotnet tool install -g dotnet-reportgenerator-globaltool
+   
+   reportgenerator -reports:$(Build.SourcesDirectory)/**/*.cobertura.xml -targetdir:$(System.DefaultWorkingDirectory)/csp-code-coverage/coverage "-reporttypes:Cobertura;Html"
+   
+  displayName: 'merge tests reports'
+
+###########################################################################################
+# Build Test Results
+###########################################################################################
+- task: PublishTestResults@2
+  displayName: 'Publish Test Results'
+  inputs:
+    testResultsFormat: VSTest
+    testResultsFiles: '**.trx'
+    searchFolder: '$(Agent.TempDirectory)'
+    mergeTestResults: true
+    failTaskOnFailedTests: true
+###########################################################################################
+# Publish Code Coverage Results
+###########################################################################################
+- task: PublishCodeCoverageResults@1
+  displayName: 'Publish code coverage '
+  inputs:
+    codeCoverageTool: Cobertura
+    summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/csp-code-coverage/coverage/Cobertura.xml'
+    reportDirectory: '$(System.DefaultWorkingDirectory)/csp-code-coverage/coverage/'
+    failIfCoverageEmpty: true
+###########################################################################################
+# Build quality check
+###########################################################################################
+- task: BuildQualityChecks@8
+  inputs:
+    checkCoverage: true
+    coverageFailOption: 'build'
+    coverageType: 'lines'
+    coveragePrecision: '3'
+    baseBranchRef: '$(System.PullRequest.TargetBranch)'
+    baseDefinitionId:  41540
