@@ -86,6 +86,16 @@ pool:
   vmImage: ubuntu-latest
 
 stages:
+- stage: publish_helm_artifacts_stage
+  displayName: 'Publish helm artifacts'
+  condition: and(succeeded(), or(eq(variables.isDevelop, true), eq(variables.isMaster, true)))
+  jobs:
+  - job: publish_helm_artifacts_job
+    displayName: Publish helm artifacts
+    steps:
+    - publish: '$(Build.SourcesDirectory)'
+      artifact: cspservice-artifacts
+      
 - stage: nonprod_import_api_to_apim_sit_stage
   displayName: Import API to APIM for SIT
   jobs:
