@@ -32,5 +32,5 @@ Invoke-RestMethod -Uri $schemaUrl -OutFile $schemaFileName
 ls
 
 Write-Host "Import GraphQL Api endpoint to apim instance"
-Import-AzApiManagementApi -ServiceUrl $ServiceUrl -ApiType GraphQL -Path $GraphQLSuffix -ApiId $ApiId -Context $apiContext -SpecificationPath .\$schemaFileName -SpecificationFormat GraphQL
+Import-AzApiManagementApi -ServiceUrl $ServiceUrl -ApiType GraphQL -Path $GraphQLSuffix -ApiId $ApiId -Context $apiContext -SpecificationUrl $schemaUrl -SpecificationFormat GraphQL
 Write-Host "GraphQL APi successfully imported to apim instance.." -ForegroundColor "Green"
