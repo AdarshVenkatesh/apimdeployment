@@ -8,7 +8,7 @@ param(
 
 Write-Host "Reading API Name"
 Write-Host "API Name: $ApiName"
-$schemaUrl = "https://fd-csp-sit-h7f5bmcpfahwfwfr.z01.azurefd.net/csp-api/graphql/sdl"
+$schemaUrl = "https://fd-csp-sit-h7f5bmcpfahwfwfr.z01.azurefd.net/csp-api/graphql/sdl/"
 $schemaFileName = "schema.graphql"
 $apiContext = New-AzApiManagementContext -ResourceGroupName $ApimResourceGroupName -ServiceName $ApimInstanceName
 $apiObj = Get-AzApiManagementApi -Context $apiContext -Name "$ApiName"
