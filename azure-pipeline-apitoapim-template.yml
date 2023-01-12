@@ -38,7 +38,7 @@ steps:
   inputs:
     azureSubscription: ${{ parameters.apimARMServiceConnection }}
     ScriptType: 'FilePath'
-    ScriptPath: '.\ImportGraphQLApiToApim.ps1'
+    ScriptPath: '$(Pipeline.Workspace)/cspservice-artifacts/ImportGraphQLApiToApim.ps1'
     ScriptArguments: '-ApimResourceGroupName ${{ parameters.apimResourceGroupName }} -ApimInstanceName ${{ parameters.apimInstanceName }} -GraphQLSuffix ${{ parameters.graphQLSuffix }} -ApiName "${{ parameters.apimGraphQLApiName }}" -ServiceUrl ${{ parameters.graphQLServiceUrl }}'
     FailOnStandardError: true
     preferredAzurePowerShellVersion: '9.3.0'
